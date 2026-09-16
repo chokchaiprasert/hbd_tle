@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HBD Borwornwit 🎉</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="st.css" rel="stylesheet">
+    <style>
+        /* CSS สำหรับ Animation จุดพิมพ์ข้อความ */
+        .typing-indicator span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #8b5cf6;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-violet-50 min-h-screen w-full flex flex-col justify-center items-center font-sans relative overflow-hidden m-0 p-0">
+
+    <audio id="bg-music" src="music/Takaramono_no_Sekai.mp3" loop></audio>
+
+    <!-- หน้าต่างใส่รหัสผ่าน -->
+    <div id="quiz-screen" class="z-[110] text-center transition-all duration-700 w-full px-4 absolute flex flex-col items-center justify-center h-full bg-violet-50/90 backdrop-blur-md">
+        <div class="mb-6 text-6xl animate-bounce">🎂</div>
+        <h2 class="text-2xl font-bold text-violet-900 mb-6">ความลับอยู่ในจดหมาย</h2>
+        <div class="bg-white/90 backdrop-blur-sm p-8 rounded-3xl shadow-xl w-full max-w-xs mx-auto border border-violet-100">
+            <p class="text-gray-600 mb-4 font-medium">คำถาม: "รหัสอะไร?"</p>
+            <input type="text" id="answer-input" placeholder="กรอกคำตอบที่นี่..."
+                class="w-full px-4 py-3 border-b-2 border-violet-400 focus:border-violet-600 outline-none text-center mb-6 bg-transparent text-violet-900 font-semibold transition-all">
+            
+            <p id="error-msg" class="text-rose-500 text-sm mb-4 hidden">รหัสผ่านไม่ถูกต้อง ลองอีกครั้งนะ!</p>
+
+            <button onclick="unlockLetter()"
+                class="w-full bg-gradient-to-r from-violet-500 to-pink-500 hover:from-violet-600 hover:to-pink-600 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95">
+                ยืนยันเพื่อเปิดอ่าน ✨
+            </button>
+        </div>
+    </div>
+
+    <!-- หน้าต่างแชท -->
+    <div id="chat-container" class="hidden opacity-0 transition-opacity duration-1000 w-full max-w-sm sm:max-w-md h-screen sm:h-[85vh] bg-white sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden relative border-0 sm:border-4 border-violet-200 z-10 mx-auto">
+        
+        <!-- Header แชท -->
+        <div class="bg-gradient-to-r from-violet-600 to-pink-500 text-white px-4 py-3 flex items-center shadow-md z-10">
+           <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mr-3 overflow-hidden border-2 border-white">
+                <img src="photo/_GIF_-ezgif.com-video-to-gif-converter.gif" alt="Bot Avatar" class="w-full h-full object-cover">
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">Elvira-bot</h1>
+                <p class="text-xs text-pink-200">🟢ออนไลน์</p>
+            </div>
+        </div>
+
+        <!-- กล่องข้อความแชท -->
+        <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 no-scrollbar pb-24">
+        </div>
+
+        <!-- ปุ่มคลิกส่งข้อความถัดไป -->
+        <div class="bg-white/95 backdrop-blur px-4 py-3 border-t border-violet-100 flex items-center gap-2 absolute bottom-0 w-full shadow-inner">
+            <button id="next-btn" class="w-full bg-gradient-to-r from-violet-500 to-pink-500 hover:from-violet-600 hover:to-pink-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-300 transform active:scale-95 shadow-md">
+                คลิกเพื่อส่งข้อความต่อไป
+            </button>
+        </div>
+
+    </div>
+
+    <!-- 🎁 หน้าต่าง Pop-up ของขวัญกลางจอ (Gift Modal) -->
+    <div id="gift-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden opacity-0 transition-opacity duration-500 flex items-center justify-center p-4">
+        <div id="gift-modal-card" class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center transform scale-75 transition-transform duration-500 border-4 border-pink-200 relative overflow-hidden">
+            <!-- แสงตกแต่งพื้นหลัง -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-pink-100 rounded-full blur-xl pointer-events-none"></div>
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-violet-100 rounded-full blur-xl pointer-events-none"></div>
+
+            <div class="text-6xl mb-3 animate-bounce">🎁</div>
+            <h3 class="text-2xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                Happy Birthday Kub p Tle 
+            </h3>
+
+            <button onclick="closeGiftModal()" class="w-full bg-gradient-to-r from-violet-500 to-pink-500 hover:from-violet-600 hover:to-pink-600 text-white font-bold py-3 rounded-xl shadow-lg transition-all active:scale-95">
+                ขอบคุณนะ 
+            </button>
+        </div>
+    </div>
+
+    <!-- ส่วนเครดิตท้ายเว็บ -->
+    <div id="credits" class="mt-6 text-center hidden opacity-0 transition-opacity duration-1000 ease-in-out z-10">
+        <p class="text-gray-500 font-semibold text-sm">&copy; 2026 Web HBD Borwornwit</p>
+        <p class="text-gray-400 text-xs mt-1">
+            Designed & Developed by <span class="text-violet-600 font-medium">Chokchai Prasert</span> with Gemini 3.8 flash and TailwindCSS. <br>
+        </p>
+    </div>
+
+    <script>
+        const SECRET_PASSWORD = "MTcwOTI1NDk="; 
+        const scriptData = [
+            { user: "ฮัลโหล มีใครอยู่ไหม?", bot: "สวัสดีค่ะ! รออยู่เลยยยย ✨<br><img src='photo/elvira-hello.png' class='w-32 mt-2 rounded-lg shadow-sm'>" },
+            { user: "เธอเป็นใครเนี่ย?", bot: "ฉันคือ Elvira-bot ค่ะ! ได้รับภารกิจลับให้มารอต้อนรับคุณโดยเฉพาะเลยนะ 💌" },
+            { user: "มีภารกิจลับอะไรหรอ?", bot: "ฮั่นแน่... ลองเดาดูสิคะ ว่ารู้อะไรเกี่ยวกับวันนี้บ้างไหม?" },
+            { user: "วันพฤหัสบดีไง 😅", bot: "ใช่ที่ไหนเล่าาา! ลองนึกดูดีๆ อีกรอบสิคะ 🤔" },
+            { user: "เอ๊ะ... หรือว่าวันเกิดฉันเอง?", bot: "ติ๊งต่อง! ถูกต้องแล้วค่าาา เก่งมาก! 🎂✨" },
+            { user: "มีเซอร์ไพรส์อะไรไหมนะ?", bot: "แฮปปี้เบิร์ธเดย์นะคะ Borwornwit! 🎉<br>ขอให้ปีนี้โตขึ้นอีกปีอย่างมีความสุข ยิ้มเยอะๆ มีพลังในทุกๆ วันนะ! <br><img src='photo/elvira-HBD.png' class='w-32 mt-2 rounded-lg shadow-sm'>" },
+            { user: "ขอบคุณมากๆ", bot: "ยังไม่หมดเท่านี้นะคะ! คนสร้างฉันเขาฝากบอกว่า 'ก็แก่ขึ้นอีกปีล่ะ 20 หรือ 21 น่ะ ก็นั้นแหละ ขอให้ปีนี้เป็นปีที่มีความสุขอีกปีน่ะพี่ รวยๆ มีสุขภาพแข็งแรง (รูปไปค้นเจอมา)'<br><div class='flex gap-2 mt-2'><img src='photo/IMG_1700.jpg' class='w-28 rounded-lg shadow-sm object-cover'><img src='photo/IMG_1703.jpg' class='w-28 rounded-lg shadow-sm object-cover'></div>" },
+            { user: "มีอะไรอีกไหม?", bot: "แน่นอนค่ะ! ของขวัญกล่องสำคัญรอคุณอยู่... พร้อมเปิดหรือยังเอ่ย? 🎁" },
+            { user: "พร้อมมาก!", bot: "งั้นกดปุ่มด้านล่างเพื่อรับของขวัญและฉลองกันเลยยย! 🥳🎉" }
+        ];
+
+        let step = 0;
+        const quizScreen = document.getElementById('quiz-screen');
+        const chatContainer = document.getElementById('chat-container');
+        const creditsDiv = document.getElementById('credits');
+        const chatBox = document.getElementById('chat-box');
+        const nextBtn = document.getElementById('next-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const giftModal = document.getElementById('gift-modal');
+        const giftModalCard = document.getElementById('gift-modal-card');
+
+        function unlockLetter() {
+            const input = document.getElementById('answer-input').value.trim();
+            
+            if (input === SECRET_PASSWORD) {
+                const music = document.getElementById('bg-music');
+                music.play().catch(error => {
+                    console.log("ไม่สามารถเล่นเพลงได้อัตโนมัติเนื่องจากกฎของเบราว์เซอร์:", error);
+                });
+
+                quizScreen.classList.add('opacity-0');
+                
+                setTimeout(() => {
+                    quizScreen.classList.add('hidden');
+                    chatContainer.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        chatContainer.classList.remove('opacity-0');
+                        chatContainer.classList.add('opacity-100');
+                    }, 50);
+                }, 700); 
+            } else {
+                errorMsg.classList.remove('hidden');
+                const inputField = document.getElementById('answer-input');
+                inputField.classList.add('border-rose-500');
+                inputField.value = ''; 
+                setTimeout(() => inputField.classList.remove('border-rose-500'), 1500);
+            }
+        }
+
+        const scrollToBottom = () => { chatBox.scrollTop = chatBox.scrollHeight; };
+
+        const appendMessage = (text, sender) => {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex w-full ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            const innerDiv = document.createElement('div');
+            innerDiv.className = `max-w-[75%] px-4 py-2.5 rounded-2xl shadow-sm text-sm sm:text-base leading-relaxed ${
+                sender === 'user'
+                ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white rounded-tr-none'
+                : 'bg-white text-gray-800 border border-violet-100 rounded-tl-none'
+            }`;
+            innerDiv.innerHTML = text;
+            
+            msgDiv.appendChild(innerDiv);
+            chatBox.appendChild(msgDiv);
+            scrollToBottom();
+        };
+
+        const showTyping = () => {
+            const msgDiv = document.createElement('div');
+            msgDiv.id = 'typing-indicator';
+            msgDiv.className = 'flex w-full justify-start';
+            msgDiv.innerHTML = `
+                <div class="bg-white border border-violet-100 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm typing-indicator flex items-center">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
+            chatBox.appendChild(msgDiv);
+            scrollToBottom();
+        };
+
+        const removeTyping = () => {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+        };
+
+        function openGiftModal() {
+            triggerConfetti();
+            giftModal.classList.remove('hidden');
+            setTimeout(() => {
+                giftModal.classList.remove('opacity-0');
+                giftModal.classList.add('opacity-100');
+                giftModalCard.classList.remove('scale-75');
+                giftModalCard.classList.add('scale-100');
+            }, 30);
+        }
+
+
+        function closeGiftModal() {
+            giftModalCard.classList.remove('scale-100');
+            giftModalCard.classList.add('scale-75');
+            giftModal.classList.remove('opacity-100');
+            giftModal.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                giftModal.classList.add('hidden');
+            }, 500);
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (step >= scriptData.length) {
+
+                openGiftModal();
+
+                nextBtn.innerText = "Happy Birthday Kub p Tle 🎂";
+                nextBtn.disabled = true;
+                nextBtn.className = "w-full bg-gray-400 text-white font-semibold py-3 px-4 rounded-full shadow-md cursor-not-allowed";
+
+                creditsDiv.classList.remove('hidden'); 
+                setTimeout(() => {
+                    creditsDiv.classList.remove('opacity-0');
+                    creditsDiv.classList.add('opacity-100');
+                }, 50);
+
+                return;
+            }
+
+            nextBtn.disabled = true;
+            nextBtn.classList.add('opacity-50');
+            appendMessage(scriptData[step].user, 'user');
+
+            setTimeout(() => { showTyping(); }, 400);
+
+            setTimeout(() => {
+                removeTyping();
+                appendMessage(scriptData[step].bot, 'bot');
+                step++;
+                nextBtn.disabled = false;
+                nextBtn.classList.remove('opacity-50');
+                
+                if (step >= scriptData.length) {
+                    nextBtn.innerText = "กดเปิดรับของขวัญเลย! 🎁✨";
+                    nextBtn.className = "w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-3 px-4 rounded-full transition-all duration-300 transform active:scale-95 shadow-lg animate-pulse";
+                }
+            }, 1500); 
+        });
+
+        const triggerConfetti = () => {
+            const duration = 4 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 }; 
+
+            const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+
+                const particleCount = 60 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        };
+    </script>
+</body>
+</html>
